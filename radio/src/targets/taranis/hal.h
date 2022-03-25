@@ -19,6 +19,8 @@
  * GNU General Public License for more details.
  */
 
+//test a
+//test b
 #ifndef _HAL_H_
 #define _HAL_H_
 
