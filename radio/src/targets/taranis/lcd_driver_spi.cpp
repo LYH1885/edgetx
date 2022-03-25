@@ -21,11 +21,11 @@
 
 #include "opentx.h"
 
-#if defined(RADIO_FAMILY_JUMPER_T12) || defined(RADIO_TX12) || defined(RADIO_ZORRO) || defined(RADIO_T8) || defined(RADIO_TPRO)
+//#if defined(RADIO_FAMILY_JUMPER_T12) || defined(RADIO_TX12) || defined(RADIO_ZORRO) || defined(RADIO_T8) || defined(RADIO_TPRO)
   #define LCD_CONTRAST_OFFSET            -10
-#else
+//#else
   #define LCD_CONTRAST_OFFSET            160
-#endif
+//#endif
 #define RESET_WAIT_DELAY_MS            300 // Wait time after LCD reset before first command
 #define WAIT_FOR_DMA_END()             do { } while (lcd_busy)
 
@@ -108,10 +108,24 @@ void lcdHardwareInit()
 #if LCD_W == 128
 void lcdStart()
 {
-#if defined(LCD_VERTICAL_INVERT)
-  // T12 and TX12 have the screen inverted.
+//Uncomment below for SH1106 OLED
+  
+    lcdWriteCommand(0xe2); // (14) Soft reset
+    lcdWriteCommand(0xa1); // Set seg
+    lcdWriteCommand(0xc8); // Set com
+    lcdWriteCommand(0xf8); // Set booster
+    lcdWriteCommand(0x00); // 5x
+    lcdWriteCommand(0xa3); // Set bias=1/6
+    lcdWriteCommand(0x22); // Set internal rb/ra=5.0
+    lcdWriteCommand(0x2f); // All built-in power circuits on
+    lcdWriteCommand(0x24); // Power control set
+    lcdWriteCommand(0x81); // Set contrast
+    lcdWriteCommand(0x0A); // Set Vop
+    lcdWriteCommand(0xa6); // Set display mode
+/*if defined(RADIO_T12)
+  // Jumper has the screen inverted.#
   lcdWriteCommand(0xe2); // (14) Soft reset
-  lcdWriteCommand(0xa0); // Set seg
+  lcdWriteCommand(0xa1); // Set seg
   lcdWriteCommand(0xc8); // Set com
   lcdWriteCommand(0xf8); // Set booster
   lcdWriteCommand(0x00); // 5x
@@ -134,7 +148,7 @@ void lcdStart()
   lcdWriteCommand(0x81); // Set contrast
   lcdWriteCommand(0x36); // Set Vop
   lcdWriteCommand(0xa6); // Set display mode
-#endif
+#endif*/
 }
 #else
 void lcdStart()
@@ -144,6 +158,7 @@ void lcdStart()
   lcdWriteCommand(0x24); // Temperature compensation
   lcdWriteCommand(0xE9); // Set bias=1/10
   lcdWriteCommand(0x81); // Set Vop
+  lcdWriteCommand(0x95);
 #if defined(BOOT)
   lcdWriteCommand(LCD_CONTRAST_OFFSET + LCD_CONTRAST_DEFAULT);
 #else
@@ -174,11 +189,11 @@ void lcdStart()
 
 void lcdWriteAddress(uint8_t x, uint8_t y)
 {
-  lcdWriteCommand(x & 0x0Fu); // Set Column Address LSB CA[3:0]
-  lcdWriteCommand((x >> 4u) | 0x10u); // Set Column Address MSB CA[7:4]
+  lcdWriteCommand(x & 0x0F); // Set Column Address LSB CA[3:0]
+  lcdWriteCommand((x >> 4) | 0x10); // Set Column Address MSB CA[7:4]
 
-  lcdWriteCommand((y & 0x0Fu) | 0x60u); // Set Row Address LSB RA [3:0]
-  lcdWriteCommand(((y >> 4u) & 0x0Fu) | 0x70u); // Set Row Address MSB RA [7:4]
+  lcdWriteCommand((y & 0x0F) | 0x60); // Set Row Address LSB RA [3:0]
+  lcdWriteCommand(((y >> 4) & 0x0F) | 0x70); // Set Row Address MSB RA [7:4]
 }
 #endif
 
@@ -199,12 +214,14 @@ void lcdRefresh(bool wait)
 
 #if LCD_W == 128
   uint8_t * p = displayBuf;
+  // add offset 2px because the driver (SH1106) of the 1.3 OLED is for a 132 display
+  lcdWriteCommand(2);
   for (uint8_t y=0; y < 8; y++, p+=LCD_W) {
     lcdWriteCommand(0x10); // Column addr 0
     lcdWriteCommand(0xB0 | y); // Page addr y
-#if !defined(LCD_VERTICAL_INVERT)
+/*#if !defined(LCD_VERTICAL_INVERT)
     lcdWriteCommand(0x04);
-#endif
+#endif*/
 
     LCD_NCS_LOW();
     LCD_A0_HIGH();
@@ -363,5 +380,5 @@ void lcdSetRefVolt(uint8_t val)
 #endif
 
   lcdWriteCommand(0x81); // Set Vop
-  lcdWriteCommand(val+LCD_CONTRAST_OFFSET); // 0-255
+  lcdWriteCommand(val+20); // 0-255
 }
